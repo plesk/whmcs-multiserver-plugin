@@ -1,5 +1,7 @@
 <?php
 // Copyright 1999-2016. Parallels IP Holdings GmbH.
+use Illuminate\Database\Capsule\Manager as Capsule;
+
 class PleskMultiServer_Translate
 {
     private $_keys = array();
@@ -50,16 +52,8 @@ class PleskMultiServer_Translate
 
     private function _getUserLanguage($table, $field)
     {
-        $sqlresult = select_query(
-            $table,
-            'language',
-            array(
-                'id' => mysql_real_escape_string($_SESSION[$field]),
-            )
-        );
-        while ($data = mysql_fetch_row($sqlresult)) {
-            return reset($data);
-        }
-        return '';
+        /** @var stdClass $language */
+        $language = Capsule::table($table)->where('id', $_SESSION[$field])->first();
+        return is_null($language) ? '' : $language->language;
     }
 }

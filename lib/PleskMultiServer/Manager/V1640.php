@@ -16,7 +16,8 @@ class PleskMultiServer_Manager_V1640 extends PleskMultiServer_Manager_V1635
                 $this->_checkErrors($result);
                 $domainName = (string)$result->data->gen_info->name;
                 $usage[$domainName]['diskusage'] = (float)$result->data->gen_info->real_size;
-                $resourceUsage = reset($result->data->xpath('resource-usage'));
+                $resourceUsage = (array)$result->data->xpath('resource-usage');
+                $resourceUsage = reset($resourceUsage);
                 foreach($resourceUsage->resource as $resource) {
                     $name = (string)$resource->name;
                     if ('max_traffic' == $name) {

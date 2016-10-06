@@ -2,6 +2,8 @@
 // Copyright 1999-2016. Parallels IP Holdings GmbH.
 require_once 'lib/PleskMultiServer/Loader.php';
 
+use Illuminate\Database\Capsule\Manager as Capsule;
+
 function pleskMultiServer_MetaData() {
     return array(
         'DisplayName' => 'Plesk Multi Server',
@@ -98,18 +100,14 @@ function pleskMultiServer_CreateAccount($params) {
         }
 
         PleskMultiServer_Registry::getInstance()->manager->createTableForAccountStorage();
-        $sqlresult = select_query(
-            'mod_pleskaccounts',
-            'panelexternalid',
-            array(
-                "userid" => $params['clientsdetails']['userid'],
-                "usertype" => $params['type'],
-            )
-        );
-        $panelExternalId = '';
-        while ($data = mysql_fetch_row($sqlresult)) {
-            $panelExternalId = reset($data);
-        }
+
+        /** @var stdClass $account */
+        $account = Capsule::table('mod_pleskaccounts')
+            ->where('userid', $params['clientsdetails']['userid'])
+            ->where('usertype', $params['type'])
+            ->first();
+
+        $panelExternalId = is_null($account) ? '' : $account->panelexternalid;
         $params['clientsdetails']['panelExternalId'] = $panelExternalId;
 
         $accountId = null;
@@ -142,13 +140,15 @@ function pleskMultiServer_CreateAccount($params) {
         PleskMultiServer_Registry::getInstance()->manager->addIpToIpPool($accountId, $params);
 
         if ('' == $panelExternalId && '' != ($possibleExternalId = PleskMultiServer_Registry::getInstance()->manager->getCustomerExternalId($params))) {
-            insert_query('mod_pleskaccounts',
-                array(
-                    'userid' => $params['clientsdetails']['userid'],
-                    'usertype' => $params['type'],
-                    'panelexternalid' => $possibleExternalId
-                )
-            );
+            /** @var stdClass $account */
+            Capsule::table('mod_pleskaccounts')
+                ->insert(
+                    array(
+                        'userid' => $params['clientsdetails']['userid'],
+                        'usertype' => $params['type'],
+                        'panelexternalid' => $possibleExternalId
+                    )
+                );
         }
 
         if (!is_null($accountId) && PleskMultiServer_Object_Customer::TYPE_RESELLER == $params['type']) {
@@ -268,8 +268,6 @@ function pleskMultiServer_ChangePassword($params) {
 
 function pleskMultiServer_AdminServicesTabFields($params) {
 
-
-
     try {
         PleskMultiServer_Loader::init($params);
         $translator = PleskMultiServer_Registry::getInstance()->translator;
@@ -282,16 +280,13 @@ function pleskMultiServer_AdminServicesTabFields($params) {
             return array('' => $translator->translate('FIELD_CHANGE_PASSWORD_MAIN_PACKAGE_DESCR'));
         }
 
-        $sqlresult = select_query("tblhosting","domain",
-            array(
-                "username" => $accountInfo['login'],
-                "userid" => $params['clientsdetails']['userid'],
-            )
-        );
-        $domain = '';
-        while ($data = mysql_fetch_row($sqlresult)) {
-            $domain = reset($data);
-        }
+        /** @var stdClass $hosting */
+        $hosting = Capsule::table('tblhosting')
+            ->where('username', $accountInfo['login'])
+            ->where('userid', $params['clientsdetails']['userid'])
+            ->first();
+
+        $domain = is_null($hosting) ? '' : $hosting->domain;
         return array('' => $translator->translate('FIELD_CHANGE_PASSWORD_ADDITIONAL_PACKAGE_DESCR', array('PACKAGE' => $domain)));
 
     } catch (Exception $e) {
@@ -328,12 +323,16 @@ function pleskMultiServer_ChangePackage($params) {
  */
 function pleskMultiServer_UsageUpdate($params) {
 
-    $sqlresult = select_query("tblhosting","domain",array("server"=>$params["serverid"]));
+    $query = Capsule::table('tblhosting')
+        ->where('server', $params["serverid"]);
+
     $domains = array();
-    while ($data = mysql_fetch_row($sqlresult)) {
-       $domains[] = reset($data);
+    /** @var stdClass $hosting */
+    foreach ($query->get() as $hosting) {
+        $domains[] = $hosting->domain;
     }
     $params["domains"] = $domains;
+
     try {
         PleskMultiServer_Loader::init($params);
         $domainsUsage = PleskMultiServer_Registry::getInstance()->manager->getWebspacesUsage($params);
@@ -342,20 +341,18 @@ function pleskMultiServer_UsageUpdate($params) {
     }
 
     foreach ( $domainsUsage as $domainName => $usage ) {
-        update_query(
-            "tblhosting",
-            array(
-                "diskusage" => $usage['diskusage'],
-                "disklimit" => $usage['disklimit'],
-                "bwusage" => $usage['bwusage'],
-                "bwlimit" => $usage['bwlimit'],
-                "lastupdate" => "now()",
-            ),
-            array(
-                "server" => $params['serverid'],
-                "domain" => $domainName
-            )
-        );
+        Capsule::table('tblhosting')
+            ->where('server', $params["serverid"])
+            ->where('domain', $domainName)
+            ->update(
+                array(
+                    "diskusage" => $usage['diskusage'],
+                    "disklimit" => $usage['disklimit'],
+                    "bwusage" => $usage['bwusage'],
+                    "bwlimit" => $usage['bwlimit'],
+                    "lastupdate" => Capsule::table('tblhosting')->raw('now()'),
+                )
+            );
     }
 
     return 'success';

@@ -113,11 +113,16 @@ class PleskMultiServer_Manager_V1000 extends PleskMultiServer_Manager_Base
         $domain = ($params["serverhostname"]) ? $params["serverhostname"] : $params["serverip"];
         $port = ($params["serveraccesshash"]) ? $params["serveraccesshash"] : '8443';
         $secure = ($params["serversecure"]) ? 'https' : 'http';
-        $result = full_query("SELECT username,password FROM tblhosting WHERE server=".mysql_real_escape_string($params['serverid'])." AND userid=".mysql_real_escape_string($params['clientsdetails']['userid'])." AND domainstatus='Active' ORDER BY id ASC");
-        $data = mysql_fetch_array($result);
+
+        /** @var stdClass $hosting */
+        $hosting = Capsule::table('tblhosting')
+            ->where('server', $params['serverid'])
+            ->where('userid', $params['clientsdetails']['userid'])
+            ->where('domainstatus', 'Active')
+            ->first();
         $code = '';
 
-        if (isset($data["username"]) && isset($data["password"])) {
+        if ($hosting->username && $hosting->password) {
             $manager = new PleskMultiServer_Manager_V1000();
             $ownerInfo = $manager->getAccountInfo($params);
             if (!isset($ownerInfo['login'])) {
@@ -133,7 +138,7 @@ class PleskMultiServer_Manager_V1000 extends PleskMultiServer_Manager_Base
                 WHMCS\Input\Sanitize::encode($domain),
                 WHMCS\Input\Sanitize::encode($port),
                 WHMCS\Input\Sanitize::encode($ownerInfo['login']),
-                WHMCS\Input\Sanitize::encode(decrypt($data["password"])),
+                WHMCS\Input\Sanitize::encode(decrypt($hosting->password)),
                 PleskMultiServer_Registry::getInstance()->translator->translate('BUTTON_CONTROL_PANEL')
             );
         }
@@ -213,33 +218,25 @@ class PleskMultiServer_Manager_V1000 extends PleskMultiServer_Manager_Base
     protected function _getAccountInfo($params, $panelExternalId = null)
     {
         $accountInfo = array();
-        $sqlresult = select_query(
-            "tblhosting",
-            "username",
-            array(
-                "server" => $params['serverid'],
-                "userid" => $params["clientsdetails"]["userid"]
-            )
-        );
-        while ($data = mysql_fetch_row($sqlresult)) {
-            $login = reset($data);
-            try {
-                $result = PleskMultiServer_Registry::getInstance()->api->customer_get_by_login(array( 'login' => $login ));
-                if (isset($result->client->get->result->id)){
-                    $accountInfo['id'] = (int)$result->client->get->result->id;
-                }
+        /** @var stdClass $hosting */
+        $hosting = Capsule::table('tblhosting')
+            ->where('server', $params['serverid'])
+            ->where('userid', $params['clientsdetails']['userid'])
+            ->first();
+        $login = is_null($hosting) ? '' : $hosting->username;
 
-                if (isset($result->client->get->result->data->gen_info->login)) {
-                    $accountInfo['login'] = (string)$result->client->get->result->data->gen_info->login;
-                }
-            } catch (Exception $e) {
-                if (PleskMultiServer_Api::ERROR_OBJECT_NOT_FOUND != $e->getCode()) {
-                    throw $e;
-                }
+        try {
+            $result = PleskMultiServer_Registry::getInstance()->api->customer_get_by_login(array( 'login' => $login ));
+            if (isset($result->client->get->result->id)){
+                $accountInfo['id'] = (int)$result->client->get->result->id;
             }
 
-            if (!empty($accountInfo)) {
-                break;
+            if (isset($result->client->get->result->data->gen_info->login)) {
+                $accountInfo['login'] = (string)$result->client->get->result->data->gen_info->login;
+            }
+        } catch (Exception $e) {
+            if (PleskMultiServer_Api::ERROR_OBJECT_NOT_FOUND != $e->getCode()) {
+                throw $e;
             }
         }
 
@@ -254,7 +251,6 @@ class PleskMultiServer_Manager_V1000 extends PleskMultiServer_Manager_Base
         }
 
         return $accountInfo;
-
     }
 
     protected function _addAccount($params)
