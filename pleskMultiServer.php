@@ -110,6 +110,7 @@ function pleskMultiServer_CreateAccount($params) {
         while ($data = mysql_fetch_row($sqlresult)) {
             $panelExternalId = reset($data);
         }
+        $params['clientsdetails']['panelExternalId'] = $panelExternalId;
 
         $accountId = null;
         try{
@@ -140,7 +141,7 @@ function pleskMultiServer_CreateAccount($params) {
         }
         PleskMultiServer_Registry::getInstance()->manager->addIpToIpPool($accountId, $params);
 
-        if ('' == $panelExternalId && '' != ($possibleExternalId = PleskMultiServer_Registry::getInstance()->manager->getCustomerExternalId($params['clientsdetails']['userid']))) {
+        if ('' == $panelExternalId && '' != ($possibleExternalId = PleskMultiServer_Registry::getInstance()->manager->getCustomerExternalId($params))) {
             insert_query('mod_pleskaccounts',
                 array(
                     'userid' => $params['clientsdetails']['userid'],

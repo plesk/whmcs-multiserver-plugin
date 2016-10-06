@@ -162,7 +162,7 @@ class PleskMultiServer_Manager_V1630 extends PleskMultiServer_Manager_V1000
     protected function _getAddAccountParams($params)
     {
         $result = parent::_getAddAccountParams($params);
-        $result['externalId'] = $this->_getCustomerExternalId($params['clientsdetails']['userid']);
+        $result['externalId'] = $this->_getCustomerExternalId($params);
         return $result;
     }
 
@@ -431,9 +431,9 @@ class PleskMultiServer_Manager_V1630 extends PleskMultiServer_Manager_V1000
         return $result->webspace->get->result;
     }
 
-    protected function _getCustomerExternalId($id)
+    protected function _getCustomerExternalId($params)
     {
-        return PleskMultiServer_Object_Customer::EXTERNAL_ID_PREFIX . $id;
+        return PleskMultiServer_Object_Customer::getCustomerExternalId($params);
     }
 
     protected function _changeSubscriptionIp($params)

@@ -11,8 +11,13 @@ class PleskMultiServer_Object_Customer
 
     const EXTERNAL_ID_PREFIX = 'whmcs_PleskMultiServer_';
 
-    public static function getExternalCustomerId($id)
+    public static function getCustomerExternalId($params)
     {
-        return self::EXTERNAL_ID_PREFIX . $id;
+        if (isset($params['clientsdetails']['panelExternalId'])
+            && '' != $params['clientsdetails']['panelExternalId'])
+        {
+            return $params['clientsdetails']['panelExternalId'];
+        }
+        return $params['clientsdetails']['uuid'];
     }
 }
