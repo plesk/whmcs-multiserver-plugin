@@ -294,6 +294,7 @@ class PleskMultiServer_Manager_V1000 extends PleskMultiServer_Manager_Base
 
     protected function _addWebspace($params)
     {
+        $this->_checkRestrictions($params);
         $requestParams = array(
             'domain' => $params['domain'],
             'ownerId' => $params['ownerId'],
@@ -463,6 +464,28 @@ class PleskMultiServer_Manager_V1000 extends PleskMultiServer_Manager_Base
                 array(
                     'domain' => $params['domain'],
                     'ipv4Address' => $ipv4Address,
+                )
+            );
+        }
+    }
+
+    /**
+     * @param array $params
+     * @throws Exception
+     */
+    protected function _checkRestrictions($params)
+    {
+        $accountLimit = (int)PleskMultiServer_Config::get()->account_limit;
+        if (0 >= $accountLimit) {
+            return;
+        }
+
+        $accountCount = PleskMultiServer_Utils::getAccountsCount($params['userid']);
+        if ($accountLimit < $accountCount) {
+            throw new Exception(
+                PleskMultiServer_Registry::getInstance()->translator->translate(
+                    'ERROR_RESTRICTIONS_ACCOUNT_COUNT',
+                    array('ACCOUNT_LIMIT' => $accountLimit,)
                 )
             );
         }

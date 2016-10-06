@@ -11,7 +11,7 @@ class PleskMultiServer_Manager_V1680 extends PleskMultiServer_Manager_V1660
      */
     protected function _getIps($params)
     {
-        return [];
+        return array();
     }
 
     protected function _addWebspace($params)
