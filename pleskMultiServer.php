@@ -102,7 +102,7 @@ function pleskMultiServer_CreateAccount($params) {
         PleskMultiServer_Registry::getInstance()->manager->createTableForAccountStorage();
 
         /** @var stdClass $account */
-        $account = Capsule::table('mod_pleskaccounts')
+        $account = Capsule::table('mod_pleskmsaccounts')
             ->where('userid', $params['clientsdetails']['userid'])
             ->where('usertype', $params['type'])
             ->first();
@@ -141,7 +141,7 @@ function pleskMultiServer_CreateAccount($params) {
 
         if ('' == $panelExternalId && '' != ($possibleExternalId = PleskMultiServer_Registry::getInstance()->manager->getCustomerExternalId($params))) {
             /** @var stdClass $account */
-            Capsule::table('mod_pleskaccounts')
+            Capsule::table('mod_pleskmsaccounts')
                 ->insert(
                     array(
                         'userid' => $params['clientsdetails']['userid'],

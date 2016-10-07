@@ -36,12 +36,12 @@ abstract class PleskMultiServer_Manager_Base
 
     public function createTableForAccountStorage()
     {
-        if (Capsule::schema()->hasTable('mod_pleskaccounts')) {
+        if (Capsule::schema()->hasTable('mod_pleskmsaccounts')) {
             return;
         }
 
         Capsule::schema()->create(
-            'mod_pleskaccounts',
+            'mod_pleskmsaccounts',
             function ($table) {
                 $table->engine = 'MyISAM';
 

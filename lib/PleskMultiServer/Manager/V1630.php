@@ -21,7 +21,7 @@ class PleskMultiServer_Manager_V1630 extends PleskMultiServer_Manager_V1000
 
             $this->createTableForAccountStorage();
             /** @var stdClass $account */
-            $account = Capsule::table('mod_pleskaccounts')
+            $account = Capsule::table('mod_pleskmsaccounts')
                 ->where('userid', $params['clientsdetails']['userid'])
                 ->where('usertype', $params['type'])
                 ->first();
