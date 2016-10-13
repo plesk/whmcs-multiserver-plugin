@@ -41,6 +41,31 @@ class PleskMultiServer_Api
         return ('admin' === $this->_login);
     }
 
+    /**
+     * @param array $escapedParams
+     * @return string
+     */
+    private function _getRequestParams(array $escapedParams = [])
+    {
+        $requestParams = '';
+        if (isset($escapedParams['requestSettings']) && is_array($escapedParams['requestSettings'])) {
+            foreach($escapedParams['requestSettings'] as $name => $value) {
+                $requestParams .= '<setting>
+                <name>' . $name . '</name>
+                <value>' . $value . '</value>
+            </setting>';
+            }
+            $requestParams = '<request-settings>
+            <setting>
+                <name>plesk_rpc_forwarding_to_ext</name>
+                <value>plesk-multi-server</value>
+            </setting>' . $requestParams . '
+        </request-settings>';
+        }
+
+        return $requestParams;
+    }
+
     protected function request($command, $params)
     {
         $translator = PleskMultiServer_Registry::getInstance()->translator;
@@ -61,22 +86,7 @@ class PleskMultiServer_Api
         foreach ($params as $name => $value) {
             $escapedParams[$name] = is_array($value) ? array_map(array($this, '_escapeValue'), $value) : $this->_escapeValue($value);
         }
-
-        $requestParams = '';
-        if (isset($escapedParams['requestSettings']) && is_array($escapedParams['requestSettings'])) {
-            foreach($escapedParams['requestSettings'] as $name => $value) {
-                $requestParams .= '<setting>
-                <name>' . $name . '</name>
-                <value>' . $value . '</value>
-            </setting>';
-            }
-            $requestParams = '<request-settings>
-            <setting>
-                <name>plesk_rpc_forwarding_to_ext</name>
-                <value>plesk-multi-server</value>
-            </setting>' . $requestParams . '
-        </request-settings>';
-        }
+        $requestParams = $this->_getRequestParams($escapedParams);
 
         extract($escapedParams);
         ob_start();

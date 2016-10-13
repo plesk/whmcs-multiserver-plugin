@@ -170,6 +170,12 @@ class PleskMultiServer_Manager_V1680 extends PleskMultiServer_Manager_V1660
         parent::_switchSubscription($params);
     }
 
+    protected function _getWebspacesUsage($params)
+    {
+        $params['requestSettings'] = [];
+        return parent::_getWebspacesUsage($params);
+    }
+
     protected function _setWebspaceStatus($params)
     {
         $params['requestSettings'] = array();

@@ -10,7 +10,7 @@ class PleskMultiServer_Manager_V1640 extends PleskMultiServer_Manager_V1635
     protected function _getWebspacesUsage($params)
     {
         $usage = array();
-        $webspaces = PleskMultiServer_Registry::getInstance()->api->webspace_usage_get_by_name(array('domains' => $params['domains']));
+        $webspaces = PleskMultiServer_Registry::getInstance()->api->webspace_usage_get_by_name($params);
         foreach($webspaces->xpath('//webspace/get/result') as $result) {
             try {
                 $this->_checkErrors($result);
